@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getActivities, getCategories, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
 import { ChangePasswordModal } from '../components/ChangePasswordModal'
+import { SettingsModal } from '../components/SettingsModal'
 import { useAuth } from '../context/AuthContext'
 import { ActivityCard } from '../components/ActivityCard'
 import { CategoryCard } from '../components/CategoryCard'
@@ -22,6 +23,7 @@ export function CategoryPage() {
   const [allCategories, setAllCategories] = useState<Category[]>([])
 
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [doneActivity, setDoneActivity] = useState<Activity | null>(null)
   const [showAddActivity, setShowAddActivity] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
@@ -130,12 +132,8 @@ export function CategoryPage() {
           </h1>
           {!currentCategoryId && (
             <div className="flex items-center gap-3">
-              <button
-                className="text-sm text-gray-400"
-                onClick={() => setShowChangePassword(true)}
-              >
-                🔑
-              </button>
+              <button className="text-lg text-gray-400" onClick={() => setShowSettings(true)}>⚙️</button>
+              <button className="text-sm text-gray-400" onClick={() => setShowChangePassword(true)}>🔑</button>
               <button
                 className="text-sm text-gray-400"
                 onClick={handleLogout}
@@ -224,6 +222,8 @@ export function CategoryPage() {
           onSave={handleAddCategory}
         />
       )}
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       {showChangePassword && (
         <ChangePasswordModal onClose={() => setShowChangePassword(false)} />

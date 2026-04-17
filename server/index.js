@@ -9,7 +9,9 @@ await import('./db.js')
 
 import activitiesRouter from './routes/activities.js'
 import categoriesRouter from './routes/categories.js'
+import settingsRouter from './routes/settings.js'
 import { requireAuth, registerAuthRoutes } from './auth.js'
+import { scheduleBackup } from './backup.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -27,6 +29,7 @@ registerAuthRoutes(app)
 
 app.use('/api/activities', requireAuth, activitiesRouter)
 app.use('/api/categories', requireAuth, categoriesRouter)
+app.use('/api/settings', requireAuth, settingsRouter)
 
 const distDir = join(__dirname, '..', 'dist')
 if (existsSync(distDir)) {
@@ -37,4 +40,5 @@ if (existsSync(distDir)) {
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server draait op http://localhost:${PORT}`)
+  scheduleBackup()
 })

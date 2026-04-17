@@ -16,28 +16,100 @@ No test suite or linter configured.
 
 ## Architecture
 
-Full-stack single-user-per-session activity tracker. Two separate processes in dev, one in production.
+Mobile-first activity tracker web app. Multi-user, runs on a home server (NUC). Two processes in dev (Vite + Express), one in production (Express serves `dist/`).
 
 ### Backend (`server/`)
-- **`server/index.js`** — Express entry point. Registers session middleware, auth routes, API routes, and serves `dist/` in production.
-- **`server/db.js`** — Initialises lowdb with a `JSONFile` adapter at `data/activities.json`. Top-level `await db.read()` runs on import, so all route files import `db` after this resolves.
-- **`server/auth.js`** — Reads `data/users.json` (plain-text credentials) on every login request. Exposes `registerAuthRoutes()` for login/logout/change-password/me, and `requireAuth` middleware.
-- **`server/routes/activities.js`** / **`server/routes/categories.js`** — REST CRUD. Visibility rule: own items always accessible; others' items accessible only if the category has `isPrivate: false`. Category deletion is owner-only; everything else in a public category is editable by any authenticated user.
 
-### Data files
-- **`data/activities.json`** — lowdb JSON store with `{ activities: [], categories: [] }`.
-- **`data/users.json`** — manually managed array of `{ id, username, password }`. Username matching is case-insensitive; passwords are plain text.
+- **`server/index.js`** — Express entry point. Initialises session middleware, registers auth routes, mounts API routers, starts the hourly backup scheduler, and serves `dist/` in production.
+- **`server/db.js`** — lowdb with `JSONFile` adapter at `data/activities.json`. Uses top-level `await db.read()`, so route files must be imported after `db.js` resolves (handled via `await import('./db.js')` in `index.js`).
+- **`server/auth.js`** — reads `data/users.json` on every request (plain-text passwords). Exposes `registerAuthRoutes()` (login, logout, me, setup, change-password, change-username) and `requireAuth` middleware. Username matching is case-insensitive.
+- **`server/settings.js`** / **`server/backup.js`** — load/save `data/settings.json`; backup copies `data/*.json` to a timestamped subfolder. Scheduler runs every hour and checks `lastBackup` + interval.
+- **`server/routes/`** — activities, categories, settings. Visibility rule: own items always accessible; others' items only if `category.isPrivate === false`. Category deletion is owner-only; everything else in a public category is editable by any user.
+
+### Data files (not in git)
+
+- **`data/activities.json`** — lowdb store: `{ activities: [], categories: [] }`.
+- **`data/users.json`** — `[{ id, username, password }]`. Manually edited to add users. IDs are arbitrary strings and must stay stable (activities/categories reference them via `userId`).
+- **`data/settings.json`** — backup config: `{ backup: { enabled, location, interval, lastBackup } }`.
 
 ### Frontend (`src/`)
-- **`src/types.ts`** — single source of truth for `Activity`, `Category`, `HistoryEntry`, `User` interfaces. `Activity.userId` and `Category.userId` track ownership; `Category.isPrivate` controls visibility.
-- **`src/api.ts`** — all `fetch` calls to `/api/*` with `credentials: 'include'`. Throws on non-ok responses.
-- **`src/context/AuthContext.tsx`** — provides `{ user, setUser }`. Wrapped around the router in `App.tsx` after `/api/me` resolves.
-- **`src/App.tsx`** — checks session via `GET /api/me` on mount; shows `LoginPage` or the router depending on result.
-- **`src/pages/CategoryPage.tsx`** — main screen and nested category screen (same component, driven by `:id` param). Owns all data-fetching (`refresh` callback) and mutation handlers passed down to modals/cards.
-- **`src/pages/EditActivityPage.tsx`** — full-page edit form; fetches activity by id on mount. Shows delete button only for own activities (server also enforces this).
+
+- **`src/types.ts`** — canonical interfaces. `Activity` has `interval` + `intervalUnit` ('days'|'weeks'); `intervalWeeks` is kept as a deprecated fallback for existing data. `Category.isPrivate` controls visibility. Both have `userId`.
+- **`src/api.ts`** — all `fetch` calls to `/api/*` with `credentials: 'include'`. Also exports `Settings`/`BackupSettings` types.
+- **`src/context/AuthContext.tsx`** — provides `{ user, setUser }`, wraps the router in `App.tsx`.
+- **`src/App.tsx`** — calls `GET /api/me` on mount; shows `LoginPage` (or first-time setup via `GET /api/setup-needed`) or the router.
+- **`src/pages/CategoryPage.tsx`** — handles both the root screen and nested category screens (same component, `id` param optional). Owns all data fetching via a `refresh` callback and passes handlers down to modals/cards. Header shows ⚙️ (settings), 🔑 (account), and logout.
+- **`src/pages/EditActivityPage.tsx`** — full-page edit; fetches on mount. Delete is allowed for any user with access (server enforces category visibility).
 
 ### Key logic
-- **Progress ratio**: `1 - daysSinceDone / (intervalWeeks * 7)`, clamped to `[0, 1]`. Calculated in `src/utils/time.ts`.
-- **Category colour**: recursively finds the worst (lowest) ratio among all activities in the category and its subcategories (`worstRatio` in `CategoryCard.tsx`). Colour thresholds: >50% green, 10–50% orange, <10% red.
-- **History**: max 10 entries per activity, newest first. Each entry stores date, 0–5 star rating, optional note and base64 photo.
-- **Vite proxy**: `/api` proxied to `http://localhost:3001` in dev (`vite.config.ts`), so cookies work correctly across the two dev servers.
+
+- **Interval in days**: `intervalToDays(interval, unit)` in `src/utils/time.ts`. Falls back to `intervalWeeks * 7` for old data.
+- **Progress ratio**: `1 - daysSinceDone / intervalDays`, clamped `[0, 1]`. 0 if never done.
+- **Category colour**: `worstRatio()` in `CategoryCard.tsx` recurses through subcategories and returns the lowest ratio. Thresholds: >50% green, 10–50% orange, <10% red. Displayed as a coloured left border on the card.
+- **History**: max 10 entries per activity, prepended on each "done". Each entry: timestamp, 0–5 rating, optional note, optional base64 photo.
+- **Vite proxy**: `/api` → `http://localhost:3001` in dev so session cookies work across ports.
+# CLAUDE.md
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
