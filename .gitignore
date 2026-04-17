@@ -1,0 +1,4 @@
+node_modules/
+dist/
+data/activities.json
+data/users.json
