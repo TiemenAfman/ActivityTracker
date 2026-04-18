@@ -52,6 +52,7 @@ export function SettingsModal({ onClose }: Props) {
   const { backup } = settings
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={onClose}>
       <div className="bg-white rounded-t-2xl w-full p-6 pb-10 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
@@ -155,5 +156,6 @@ export function SettingsModal({ onClose }: Props) {
     </div>
 
     {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+    </>
   )
 }
