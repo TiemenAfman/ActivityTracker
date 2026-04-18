@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getActivities, getCategories, updateActivity, deleteActivity } from '../api'
+import { getActivities, getCategories, updateActivity, deleteActivity, uuid } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { PhotoViewer } from '../components/PhotoViewer'
 import { calendarDaysSince, formatDate } from '../utils/time'
@@ -66,7 +66,7 @@ export function EditActivityPage() {
           h.id === sorted[0].id ? { ...h, date: newTs } : h
         )
       } else if (sorted.length === 0) {
-        updates.history = [{ id: crypto.randomUUID(), date: newTs, rating: 0 }]
+        updates.history = [{ id: uuid(), date: newTs, rating: 0 }]
       }
     }
     await updateActivity(activity.id, updates)

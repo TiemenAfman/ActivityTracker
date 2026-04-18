@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getActivities, getCategories, getSettings, getUsers, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
+import { getActivities, getCategories, getSettings, getUsers, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout, uuid } from '../api'
 import { BottomNav } from '../components/BottomNav'
 import { useAuth } from '../context/AuthContext'
 import { ActivityCard } from '../components/ActivityCard'
@@ -53,7 +53,7 @@ export function CategoryPage() {
     const target = activity ?? doneActivity
     if (!target) return
     const entry: HistoryEntry = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       date: Date.now(),
       rating,
       scores,
@@ -79,7 +79,7 @@ export function CategoryPage() {
   ) {
     try {
       const history: HistoryEntry[] = lastDoneDate
-        ? [{ id: crypto.randomUUID(), date: new Date(lastDoneDate + 'T12:00:00').getTime(), rating: 0 }]
+        ? [{ id: uuid(), date: new Date(lastDoneDate + 'T12:00:00').getTime(), rating: 0 }]
         : []
       await createActivity({ name, interval, intervalUnit, categoryId, history, ratingEnabled, scoreEnabled, scoreLabel, createdAt: Date.now() })
       setShowAddActivity(false)
