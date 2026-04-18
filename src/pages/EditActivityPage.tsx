@@ -4,6 +4,7 @@ import { getActivities, getCategories, updateActivity, deleteActivity } from '..
 import { useAuth } from '../context/AuthContext'
 import { PhotoViewer } from '../components/PhotoViewer'
 import { calendarDaysSince, formatDate } from '../utils/time'
+import { BottomNav } from '../components/BottomNav'
 import type { Activity, Category } from '../types'
 
 export function EditActivityPage() {
@@ -29,7 +30,7 @@ export function EditActivityPage() {
 
   useEffect(() => {
     Promise.all([getActivities(), getCategories()]).then(([acts, cats]) => {
-      const found = acts.find(a => a.id === id)
+      const found = acts.find((a: Activity) => a.id === id)
       if (found) {
         setActivity(found)
         setName(found.name)
@@ -106,7 +107,7 @@ export function EditActivityPage() {
         </div>
       </div>
 
-      <div className="p-4 pb-24 flex flex-col gap-4">
+      <div className="p-4 pb-32 flex flex-col gap-4">
         <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Naam</label>
@@ -296,6 +297,7 @@ export function EditActivityPage() {
       </div>
 
       {viewPhoto && <PhotoViewer src={viewPhoto} onClose={() => setViewPhoto(null)} />}
+      <BottomNav />
     </div>
   )
 }

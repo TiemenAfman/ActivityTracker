@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getActivities, getCategories, getSettings, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
-import { SettingsModal } from '../components/SettingsModal'
+import { getActivities, getCategories, getSettings, getUsers, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
+import { BottomNav } from '../components/BottomNav'
 import { useAuth } from '../context/AuthContext'
 import { ActivityCard } from '../components/ActivityCard'
 import { CategoryCard } from '../components/CategoryCard'
@@ -11,7 +11,7 @@ import { AddCategoryModal } from '../components/AddCategoryModal'
 import { EditCategoryModal } from '../components/EditCategoryModal'
 import { PlusMenu } from '../components/PlusMenu'
 import confetti from 'canvas-confetti'
-import type { Activity, Category, HistoryEntry } from '../types'
+import type { Activity, Category, HistoryEntry, User } from '../types'
 
 export function CategoryPage() {
   const { id } = useParams<{ id?: string }>()
@@ -21,18 +21,19 @@ export function CategoryPage() {
 
   const [allActivities, setAllActivities] = useState<Activity[]>([])
   const [allCategories, setAllCategories] = useState<Category[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
   const [historyLimit, setHistoryLimit] = useState(10)
 
-  const [showSettings, setShowSettings] = useState(false)
   const [doneActivity, setDoneActivity] = useState<Activity | null>(null)
   const [showAddActivity, setShowAddActivity] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
   const refresh = useCallback(() => {
-    Promise.all([getActivities(), getCategories(), getSettings()]).then(([acts, cats, settings]) => {
+    Promise.all([getActivities(), getCategories(), getSettings(), getUsers()]).then(([acts, cats, settings, usrs]) => {
       setAllActivities(acts)
       setAllCategories(cats)
+      setAllUsers(usrs)
       setHistoryLimit(settings.historyLimit ?? 10)
     })
   }, [])
@@ -48,14 +49,15 @@ export function CategoryPage() {
     a => a.categoryId === currentCategoryId && !a.isHidden
   )
 
-  async function handleDone(rating: number, note: string, photo?: string, activity?: Activity, score?: number) {
+  async function handleDone(rating: number, note: string, photo?: string, activity?: Activity, scores?: { userId: string; score: number }[]) {
     const target = activity ?? doneActivity
     if (!target) return
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       date: Date.now(),
       rating,
-      score,
+      scores,
+      doneByUserId: user.id,
       note: note || undefined,
       photo,
     }
@@ -212,8 +214,9 @@ export function CategoryPage() {
           ratingEnabled={doneActivity.ratingEnabled !== false}
           scoreEnabled={doneActivity.scoreEnabled === true}
           scoreLabel={doneActivity.scoreLabel ?? ''}
+          users={allUsers}
           onClose={() => setDoneActivity(null)}
-          onSave={(rating, note, photo, score) => handleDone(rating, note, photo, undefined, score)}
+          onSave={(rating, note, photo, scores) => handleDone(rating, note, photo, undefined, scores)}
         />
       )}
 
@@ -235,8 +238,6 @@ export function CategoryPage() {
         />
       )}
 
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-
       {editingCategory && (
         <EditCategoryModal
           category={editingCategory}
@@ -248,24 +249,7 @@ export function CategoryPage() {
         />
       )}
 
-      {!currentCategoryId && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 flex">
-          <button
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 text-gray-400 active:bg-gray-50"
-            onClick={() => navigate('/profile')}
-          >
-            <span className="text-2xl">🏆</span>
-            <span className="text-xs">Scorebord</span>
-          </button>
-          <button
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 text-gray-400 active:bg-gray-50"
-            onClick={() => setShowSettings(true)}
-          >
-            <span className="text-2xl">⚙️</span>
-            <span className="text-xs">Instellingen</span>
-          </button>
-        </div>
-      )}
+      <BottomNav />
     </div>
   )
 }

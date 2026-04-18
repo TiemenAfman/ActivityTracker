@@ -3,6 +3,8 @@ export interface HistoryEntry {
   date: number
   rating: number
   score?: number
+  scores?: { userId: string; score: number }[]
+  doneByUserId?: string
   note?: string
   photo?: string
 }

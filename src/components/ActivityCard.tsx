@@ -43,7 +43,8 @@ export function ActivityCard({ activity, currentUserId, onDone }: Props) {
       </div>
       {activity.scoreEnabled && (
         <div className="mt-1.5 text-xs text-blue-500 font-medium">
-          {activity.scoreLabel || 'Score'}: {activity.history.reduce((sum, h) => sum + (h.score ?? 0), 0)}
+          {activity.scoreLabel || 'Score'}: {activity.history.reduce((sum, h) =>
+            sum + (h.scores ? h.scores.reduce((s, u) => s + u.score, 0) : (h.score ?? 0)), 0)}
         </div>
       )}
     </div>

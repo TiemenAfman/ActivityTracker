@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BottomNav } from '../components/BottomNav'
 import { getActivities, getCategories, getUsers } from '../api'
 import type { Activity, Category, User } from '../types'
 
@@ -48,19 +49,26 @@ export function ProfilePage() {
 
   const scoredActivities = activities.filter(a => a.scoreEnabled)
 
+  function entryScoreForUser(h: Activity['history'][number], userId: string) {
+    if (h.scores) return h.scores.find(s => s.userId === userId)?.score ?? 0
+    return (h.doneByUserId ?? '') === userId ? (h.score ?? 0) : 0
+  }
+
+  function entryTotalScore(h: Activity['history'][number]) {
+    if (h.scores) return h.scores.reduce((s, u) => s + u.score, 0)
+    return h.score ?? 0
+  }
+
   function userScore(userId: string, month?: string) {
     return scoredActivities
-      .filter(a => a.userId === userId)
-      .flatMap(a => a.history
-        .filter(h => h.score && (!month || monthKey(h.date) === month))
-        .map(h => h.score ?? 0))
-      .reduce((sum, s) => sum + s, 0)
+      .flatMap(a => a.history.filter(h => !month || monthKey(h.date) === month))
+      .reduce((sum, h) => sum + entryScoreForUser(h, userId), 0)
   }
 
   function activityScore(a: Activity, month?: string) {
     return a.history
-      .filter(h => h.score && (!month || monthKey(h.date) === month))
-      .reduce((sum, h) => sum + (h.score ?? 0), 0)
+      .filter(h => !month || monthKey(h.date) === month)
+      .reduce((sum, h) => sum + entryTotalScore(h), 0)
   }
 
   const allUserIds = [...new Set(scoredActivities.map(a => a.userId))]
@@ -154,19 +162,27 @@ export function ProfilePage() {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 {allTimeActivities.length === 0
                   ? <p className="text-sm text-gray-400 p-4">Nog geen scores</p>
-                  : allTimeActivities.map(({ a, score }, i) => {
+                  : allTimeActivities.map(({ a }, i) => {
                     const cat = a.categoryId ? categoryById[a.categoryId] : null
                     return (
-                      <div key={a.id} className="flex items-center px-4 py-3 border-b border-gray-50 last:border-0">
-                        <span className="w-6 text-sm font-bold text-gray-400 mr-3">{i + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{a.name}</p>
-                          {cat && <p className="text-xs text-gray-400">{cat.icon} {cat.name}</p>}
+                      <div key={a.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center mb-2">
+                          <span className="w-6 text-sm font-bold text-gray-400 mr-3">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{a.name}</p>
+                            {cat && <p className="text-xs text-gray-400">{cat.icon} {cat.name}</p>}
+                          </div>
+                          <p className="text-xs text-gray-400 ml-2">{a.scoreLabel || 'score'}</p>
                         </div>
-                        <div className="text-right ml-2">
-                          <p className="text-blue-500 font-bold text-sm">{score} pt</p>
-                          <p className="text-xs text-gray-400">{a.scoreLabel || 'score'}</p>
-                        </div>
+                        {users.map(u => {
+                          const total = a.history.reduce((sum, h) => sum + entryScoreForUser(h, u.id), 0)
+                          return (
+                            <div key={u.id} className="flex items-center pl-9 py-0.5">
+                              <span className="flex-1 text-xs text-gray-600">{u.username}</span>
+                              <span className="text-xs font-semibold text-blue-500">{total} pt</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })}
@@ -188,19 +204,29 @@ export function ProfilePage() {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 {monthActivities.length === 0
                   ? <p className="text-sm text-gray-400 p-4">Geen scores in deze maand</p>
-                  : monthActivities.map(({ a, score }, i) => {
+                  : monthActivities.map(({ a }, i) => {
                     const cat = a.categoryId ? categoryById[a.categoryId] : null
                     return (
-                      <div key={a.id} className="flex items-center px-4 py-3 border-b border-gray-50 last:border-0">
-                        <span className="w-6 text-sm font-bold text-gray-400 mr-3">{i + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{a.name}</p>
-                          {cat && <p className="text-xs text-gray-400">{cat.icon} {cat.name}</p>}
+                      <div key={a.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center mb-2">
+                          <span className="w-6 text-sm font-bold text-gray-400 mr-3">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{a.name}</p>
+                            {cat && <p className="text-xs text-gray-400">{cat.icon} {cat.name}</p>}
+                          </div>
+                          <p className="text-xs text-gray-400 ml-2">{a.scoreLabel || 'score'}</p>
                         </div>
-                        <div className="text-right ml-2">
-                          <p className="text-blue-500 font-bold text-sm">{score} pt</p>
-                          <p className="text-xs text-gray-400">{a.scoreLabel || 'score'}</p>
-                        </div>
+                        {users.map(u => {
+                          const total = a.history
+                            .filter(h => monthKey(h.date) === selectedMonth)
+                            .reduce((sum, h) => sum + entryScoreForUser(h, u.id), 0)
+                          return (
+                            <div key={u.id} className="flex items-center pl-9 py-0.5">
+                              <span className="flex-1 text-xs text-gray-600">{u.username}</span>
+                              <span className="text-xs font-semibold text-blue-500">{total} pt</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })}
@@ -209,6 +235,7 @@ export function ProfilePage() {
           </>
         )}
       </div>
+      <BottomNav />
     </div>
   )
 }
