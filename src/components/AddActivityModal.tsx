@@ -31,7 +31,7 @@ export function AddActivityModal({ categories, defaultCategoryId, onClose, onSav
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl w-full p-6 pb-10" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-t-2xl w-full p-6 pb-10 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
         <h2 className="text-lg font-semibold mb-4">Activiteit toevoegen</h2>
 
@@ -83,7 +83,7 @@ export function AddActivityModal({ categories, defaultCategoryId, onClose, onSav
           className="w-full border border-gray-200 rounded-xl px-3 py-2 mb-3 text-sm"
           value={lastDone}
           onChange={e => setLastDone(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
+          max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
         />
 
         <div className="flex items-center justify-between mb-3 py-2">

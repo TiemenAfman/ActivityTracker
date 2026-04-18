@@ -77,12 +77,16 @@ export function CategoryPage() {
     scoreEnabled: boolean,
     scoreLabel: string
   ) {
-    const history: HistoryEntry[] = lastDoneDate
-      ? [{ id: crypto.randomUUID(), date: new Date(lastDoneDate).getTime(), rating: 0 }]
-      : []
-    await createActivity({ name, interval, intervalUnit, categoryId, history, ratingEnabled, scoreEnabled, scoreLabel, createdAt: Date.now() })
-    setShowAddActivity(false)
-    refresh()
+    try {
+      const history: HistoryEntry[] = lastDoneDate
+        ? [{ id: crypto.randomUUID(), date: new Date(lastDoneDate + 'T12:00:00').getTime(), rating: 0 }]
+        : []
+      await createActivity({ name, interval, intervalUnit, categoryId, history, ratingEnabled, scoreEnabled, scoreLabel, createdAt: Date.now() })
+      setShowAddActivity(false)
+      refresh()
+    } catch (e) {
+      alert('Fout bij opslaan: ' + e)
+    }
   }
 
   async function handleAddCategory(name: string, icon: string, parentId: string | undefined, isPrivate: boolean) {
