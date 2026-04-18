@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import confetti from 'canvas-confetti'
 
 interface Props {
   activityName: string
@@ -83,7 +84,7 @@ export function DonePopup({ activityName, ratingEnabled, onClose, onSave }: Prop
 
         <button
           className="w-full bg-blue-500 text-white rounded-xl py-3 font-semibold"
-          onClick={() => onSave(rating, note, photo)}
+          onClick={() => { confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } }); onSave(rating, note, photo) }}
         >
           Opslaan
         </button>

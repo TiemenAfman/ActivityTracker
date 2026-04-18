@@ -12,6 +12,7 @@ const defaults = {
     interval: 'weekly', // 'daily' | 'weekly' | 'monthly'
     lastBackup: null,
   },
+  historyLimit: 10,
 }
 
 export function loadSettings() {

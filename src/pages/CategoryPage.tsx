@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getActivities, getCategories, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
+import { getActivities, getCategories, getSettings, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
 import { ChangePasswordModal } from '../components/ChangePasswordModal'
 import { SettingsModal } from '../components/SettingsModal'
 import { useAuth } from '../context/AuthContext'
@@ -11,6 +11,7 @@ import { AddActivityModal } from '../components/AddActivityModal'
 import { AddCategoryModal } from '../components/AddCategoryModal'
 import { EditCategoryModal } from '../components/EditCategoryModal'
 import { PlusMenu } from '../components/PlusMenu'
+import confetti from 'canvas-confetti'
 import type { Activity, Category, HistoryEntry } from '../types'
 
 export function CategoryPage() {
@@ -21,6 +22,7 @@ export function CategoryPage() {
 
   const [allActivities, setAllActivities] = useState<Activity[]>([])
   const [allCategories, setAllCategories] = useState<Category[]>([])
+  const [historyLimit, setHistoryLimit] = useState(10)
 
   const [showChangePassword, setShowChangePassword] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -30,9 +32,10 @@ export function CategoryPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
   const refresh = useCallback(() => {
-    Promise.all([getActivities(), getCategories()]).then(([acts, cats]) => {
+    Promise.all([getActivities(), getCategories(), getSettings()]).then(([acts, cats, settings]) => {
       setAllActivities(acts)
       setAllCategories(cats)
+      setHistoryLimit(settings.historyLimit ?? 10)
     })
   }, [])
 
@@ -47,8 +50,9 @@ export function CategoryPage() {
     a => a.categoryId === currentCategoryId && !a.isHidden
   )
 
-  async function handleDone(rating: number, note: string, photo?: string) {
-    if (!doneActivity) return
+  async function handleDone(rating: number, note: string, photo?: string, activity?: Activity) {
+    const target = activity ?? doneActivity
+    if (!target) return
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       date: Date.now(),
@@ -56,8 +60,8 @@ export function CategoryPage() {
       note: note || undefined,
       photo,
     }
-    const history = [entry, ...doneActivity.history].slice(0, 10)
-    await updateActivity(doneActivity.id, { history })
+    const history = [entry, ...target.history].slice(0, historyLimit)
+    await updateActivity(target.id, { history })
     setDoneActivity(null)
     refresh()
   }
@@ -181,7 +185,14 @@ export function CategoryPage() {
                     key={activity.id}
                     activity={activity}
                     currentUserId={user.id}
-                    onDone={() => setDoneActivity(activity)}
+                    onDone={() => {
+                      if (activity.ratingEnabled === false) {
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } })
+                        handleDone(0, '', undefined, activity)
+                      } else {
+                        setDoneActivity(activity)
+                      }
+                    }}
                   />
                 ))}
               </>

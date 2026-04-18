@@ -39,6 +39,11 @@ export function SettingsModal({ onClose }: Props) {
     setSettings({ ...settings, backup: { ...settings.backup, ...patch } })
   }
 
+  function updateHistoryLimit(value: number) {
+    if (!settings) return
+    setSettings({ ...settings, historyLimit: value })
+  }
+
   if (!settings) return null
 
   const { backup } = settings
@@ -92,6 +97,18 @@ export function SettingsModal({ onClose }: Props) {
             Laatste backup: {new Date(backup.lastBackup).toLocaleString('nl-NL')}
           </p>
         )}
+
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-2">Geschiedenis</p>
+        <label className="block text-sm text-gray-600 mb-1">Maximaal aantal items per activiteit</label>
+        <select
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 mb-4 text-sm bg-white"
+          value={settings.historyLimit}
+          onChange={e => updateHistoryLimit(Number(e.target.value))}
+        >
+          {[5, 10, 20, 50, 100].map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
 
         {backupMsg && <p className="text-green-600 text-sm mb-3">{backupMsg}</p>}
         {backupError && <p className="text-red-500 text-sm mb-3">{backupError}</p>}

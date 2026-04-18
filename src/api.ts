@@ -71,7 +71,7 @@ export interface BackupSettings {
   interval: 'daily' | 'weekly' | 'monthly'
   lastBackup: string | null
 }
-export interface Settings { backup: BackupSettings }
+export interface Settings { backup: BackupSettings; historyLimit: number }
 
 export function getSettings(): Promise<Settings> {
   return fetch(`${BASE}/settings`, { credentials: 'include' }).then(r => json<Settings>(r))
