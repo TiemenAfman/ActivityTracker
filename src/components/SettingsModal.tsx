@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getSettings, saveSettings, backupNow } from '../api'
+import { getSettings, saveSettings, backupNow, restartApp } from '../api'
 import type { Settings } from '../api'
+import { ChangePasswordModal } from './ChangePasswordModal'
 
 interface Props {
   onClose: () => void
@@ -11,6 +12,8 @@ export function SettingsModal({ onClose }: Props) {
   const [saving, setSaving] = useState(false)
   const [backupMsg, setBackupMsg] = useState('')
   const [backupError, setBackupError] = useState('')
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [restarting, setRestarting] = useState(false)
 
   useEffect(() => {
     getSettings().then(setSettings)
@@ -122,12 +125,35 @@ export function SettingsModal({ onClose }: Props) {
 
         <button
           disabled={saving}
-          className="w-full bg-blue-500 disabled:bg-gray-300 text-white rounded-xl py-3 font-semibold"
+          className="w-full bg-blue-500 disabled:bg-gray-300 text-white rounded-xl py-3 font-semibold mb-3"
           onClick={handleSave}
         >
           {saving ? 'Opslaan...' : 'Opslaan'}
         </button>
+
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-2">Account</p>
+        <button
+          className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-700 mb-3"
+          onClick={() => setShowChangePassword(true)}
+        >
+          Wachtwoord / gebruikersnaam wijzigen
+        </button>
+
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-2">App</p>
+        <button
+          disabled={restarting}
+          className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-700 disabled:opacity-50"
+          onClick={async () => {
+            setRestarting(true)
+            await restartApp()
+            setTimeout(() => window.location.reload(), 3000)
+          }}
+        >
+          {restarting ? 'App herstart, even wachten...' : 'App herstarten'}
+        </button>
       </div>
     </div>
+
+    {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
   )
 }

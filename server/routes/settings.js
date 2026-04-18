@@ -21,4 +21,9 @@ router.post('/backup-now', (_req, res) => {
   res.json(result)
 })
 
+router.post('/restart', (_req, res) => {
+  res.json({ ok: true })
+  setTimeout(() => process.exit(0), 500)
+})
+
 export default router

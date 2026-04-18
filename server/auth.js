@@ -82,4 +82,9 @@ export function registerAuthRoutes(app) {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' })
     res.json({ id: req.session.userId, username: req.session.username })
   })
+
+  app.get('/api/users', (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: 'Unauthorized' })
+    res.json(loadUsers().map(u => ({ id: u.id, username: u.username })))
+  })
 }

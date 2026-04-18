@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './pages/LoginPage'
 import { CategoryPage } from './pages/CategoryPage'
 import { EditActivityPage } from './pages/EditActivityPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { AuthContext } from './context/AuthContext'
 import { getMe } from './api'
 import type { User } from './types'
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="/activity/:id/edit" element={<EditActivityPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

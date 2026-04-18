@@ -41,6 +41,11 @@ export function ActivityCard({ activity, currentUserId, onDone }: Props) {
           {lastDoneTs ? daysAgoLabel(lastDoneTs) : 'Nog nooit gedaan'}
         </span>
       </div>
+      {activity.scoreEnabled && (
+        <div className="mt-1.5 text-xs text-blue-500 font-medium">
+          {activity.scoreLabel || 'Score'}: {activity.history.reduce((sum, h) => sum + (h.score ?? 0), 0)}
+        </div>
+      )}
     </div>
   )
 }

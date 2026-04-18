@@ -19,7 +19,7 @@ export function PlusMenu({ onAddActivity, onAddCategory, onResetHidden }: Props)
       {open && (
         <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
       )}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      <div className="fixed bottom-20 right-6 z-50 flex flex-col items-end gap-2">
         {open && (
           <div className="flex flex-col items-end gap-2 mb-1">
             <button

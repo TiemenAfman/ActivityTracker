@@ -64,6 +64,10 @@ export function getMe(): Promise<User> {
   return fetch(`${BASE}/me`, { credentials: 'include' }).then(r => json<User>(r))
 }
 
+export function getUsers(): Promise<User[]> {
+  return fetch(`${BASE}/users`, { credentials: 'include' }).then(r => json<User[]>(r))
+}
+
 // Settings
 export interface BackupSettings {
   enabled: boolean
@@ -92,6 +96,10 @@ export function backupNow(): Promise<{ ok: boolean; path: string; timestamp: str
       if (!r.ok) { const d = await r.json(); throw new Error(d.error) }
       return r.json()
     })
+}
+
+export function restartApp(): Promise<void> {
+  return fetch(`${BASE}/settings/restart`, { method: 'POST', credentials: 'include' }).then(() => {})
 }
 
 // Activities

@@ -5,7 +5,7 @@ interface Props {
   categories: Category[]
   defaultCategoryId?: string
   onClose: () => void
-  onSave: (name: string, interval: number, intervalUnit: 'days' | 'weeks', categoryId: string | undefined, lastDoneDate: string, ratingEnabled: boolean) => void
+  onSave: (name: string, interval: number, intervalUnit: 'days' | 'weeks', categoryId: string | undefined, lastDoneDate: string, ratingEnabled: boolean, scoreEnabled: boolean, scoreLabel: string) => void
 }
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
@@ -26,6 +26,8 @@ export function AddActivityModal({ categories, defaultCategoryId, onClose, onSav
   const [categoryId, setCategoryId] = useState(defaultCategoryId ?? '')
   const [lastDone, setLastDone] = useState('')
   const [ratingEnabled, setRatingEnabled] = useState(true)
+  const [scoreEnabled, setScoreEnabled] = useState(false)
+  const [scoreLabel, setScoreLabel] = useState('')
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={onClose}>
@@ -84,7 +86,7 @@ export function AddActivityModal({ categories, defaultCategoryId, onClose, onSav
           max={new Date().toISOString().split('T')[0]}
         />
 
-        <div className="flex items-center justify-between mb-5 py-2">
+        <div className="flex items-center justify-between mb-3 py-2">
           <div>
             <p className="text-sm text-gray-700 font-medium">Beoordeling</p>
             <p className="text-xs text-gray-400">Sterren vragen bij voltooiing</p>
@@ -92,10 +94,30 @@ export function AddActivityModal({ categories, defaultCategoryId, onClose, onSav
           <Toggle value={ratingEnabled} onChange={setRatingEnabled} />
         </div>
 
+        <div className="flex items-center justify-between mb-3 py-2">
+          <div>
+            <p className="text-sm text-gray-700 font-medium">Score</p>
+            <p className="text-xs text-gray-400">Punten bijhouden</p>
+          </div>
+          <Toggle value={scoreEnabled} onChange={setScoreEnabled} />
+        </div>
+
+        {scoreEnabled && (
+          <>
+            <label className="block text-sm text-gray-600 mb-1">Scorenaam</label>
+            <input
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 mb-4 text-sm"
+              placeholder="bijv. uitgevoerd, betaald, gepland"
+              value={scoreLabel}
+              onChange={e => setScoreLabel(e.target.value)}
+            />
+          </>
+        )}
+
         <button
           disabled={!name.trim()}
           className="w-full bg-blue-500 disabled:bg-gray-300 text-white rounded-xl py-3 font-semibold"
-          onClick={() => name.trim() && onSave(name.trim(), interval, intervalUnit, categoryId || undefined, lastDone, ratingEnabled)}
+          onClick={() => name.trim() && onSave(name.trim(), interval, intervalUnit, categoryId || undefined, lastDone, ratingEnabled, scoreEnabled, scoreLabel)}
         >
           Toevoegen
         </button>

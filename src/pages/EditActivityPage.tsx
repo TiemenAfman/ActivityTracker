@@ -20,6 +20,8 @@ export function EditActivityPage() {
   const [categoryId, setCategoryId] = useState('')
   const [lastDate, setLastDate] = useState('')
   const [ratingEnabled, setRatingEnabled] = useState(true)
+  const [scoreEnabled, setScoreEnabled] = useState(false)
+  const [scoreLabel, setScoreLabel] = useState('')
 
   const [viewPhoto, setViewPhoto] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -35,6 +37,8 @@ export function EditActivityPage() {
         setIntervalUnit(found.intervalUnit ?? 'weeks')
         setCategoryId(found.categoryId ?? '')
         setRatingEnabled(found.ratingEnabled !== false)
+        setScoreEnabled(found.scoreEnabled === true)
+        setScoreLabel(found.scoreLabel ?? '')
         const latest = [...found.history].sort((a, b) => b.date - a.date)[0]
         if (latest) setLastDate(new Date(latest.date).toISOString().split('T')[0])
       }
@@ -50,6 +54,8 @@ export function EditActivityPage() {
       intervalUnit,
       categoryId: categoryId || undefined,
       ratingEnabled,
+      scoreEnabled,
+      scoreLabel,
     }
     if (lastDate) {
       const newTs = new Date(lastDate).getTime()
@@ -157,6 +163,29 @@ export function EditActivityPage() {
               <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform ${ratingEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
             </div>
           </div>
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <p className="text-sm text-gray-700 font-medium">Score</p>
+              <p className="text-xs text-gray-400">Punten bijhouden</p>
+            </div>
+            <div
+              className={`w-12 h-6 rounded-full cursor-pointer transition-colors shrink-0 ${scoreEnabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+              onClick={() => setScoreEnabled(!scoreEnabled)}
+            >
+              <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform ${scoreEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+            </div>
+          </div>
+          {scoreEnabled && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Scorenaam</label>
+              <input
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                placeholder="bijv. uitgevoerd, betaald, gepland"
+                value={scoreLabel}
+                onChange={e => setScoreLabel(e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <label className="block text-xs text-gray-500 mb-1">Laatste voltooiingsdatum</label>
             <input
@@ -185,6 +214,9 @@ export function EditActivityPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      {entry.score != null && entry.score > 0 && (
+                        <span className="text-blue-500 text-xs font-bold">{entry.score}pt</span>
+                      )}
                       {entry.rating > 0 && (
                         <span className="text-yellow-400 text-sm">
                           {'★'.repeat(entry.rating)}{'☆'.repeat(5 - entry.rating)}

@@ -2,6 +2,7 @@ export interface HistoryEntry {
   id: string
   date: number
   rating: number
+  score?: number
   note?: string
   photo?: string
 }
@@ -18,6 +19,8 @@ export interface Activity {
   history: HistoryEntry[]
   isHidden?: boolean
   ratingEnabled?: boolean
+  scoreEnabled?: boolean
+  scoreLabel?: string
   createdAt: number
 }
 

@@ -4,12 +4,15 @@ import confetti from 'canvas-confetti'
 interface Props {
   activityName: string
   ratingEnabled: boolean
+  scoreEnabled: boolean
+  scoreLabel: string
   onClose: () => void
-  onSave: (rating: number, note: string, photo?: string) => void
+  onSave: (rating: number, note: string, photo?: string, score?: number) => void
 }
 
-export function DonePopup({ activityName, ratingEnabled, onClose, onSave }: Props) {
+export function DonePopup({ activityName, ratingEnabled, scoreEnabled, scoreLabel, onClose, onSave }: Props) {
   const [rating, setRating] = useState(0)
+  const [score, setScore] = useState(1)
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState<string | undefined>()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -43,6 +46,23 @@ export function DonePopup({ activityName, ratingEnabled, onClose, onSave }: Prop
                 ★
               </button>
             ))}
+          </div>
+        )}
+
+        {scoreEnabled && (
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 text-center mb-2">{scoreLabel || 'Score'}</p>
+            <div className="flex justify-center items-center gap-5">
+              <button
+                className="w-12 h-12 rounded-full bg-gray-100 text-2xl font-bold text-gray-700 active:bg-gray-200"
+                onClick={() => setScore(Math.max(1, score - 1))}
+              >−</button>
+              <span className="text-2xl font-bold w-8 text-center">{score}</span>
+              <button
+                className="w-12 h-12 rounded-full bg-blue-500 text-2xl font-bold text-white active:bg-blue-600"
+                onClick={() => setScore(score + 1)}
+              >+</button>
+            </div>
           </div>
         )}
 
@@ -84,7 +104,7 @@ export function DonePopup({ activityName, ratingEnabled, onClose, onSave }: Prop
 
         <button
           className="w-full bg-blue-500 text-white rounded-xl py-3 font-semibold"
-          onClick={() => { confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } }); onSave(rating, note, photo) }}
+          onClick={() => { confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } }); onSave(rating, note, photo, scoreEnabled ? score : undefined) }}
         >
           Opslaan
         </button>

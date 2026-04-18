@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getActivities, getCategories, getSettings, createActivity, createCategory, updateActivity, updateCategory, deleteCategory, logout } from '../api'
-import { ChangePasswordModal } from '../components/ChangePasswordModal'
 import { SettingsModal } from '../components/SettingsModal'
 import { useAuth } from '../context/AuthContext'
 import { ActivityCard } from '../components/ActivityCard'
@@ -24,7 +23,6 @@ export function CategoryPage() {
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [historyLimit, setHistoryLimit] = useState(10)
 
-  const [showChangePassword, setShowChangePassword] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [doneActivity, setDoneActivity] = useState<Activity | null>(null)
   const [showAddActivity, setShowAddActivity] = useState(false)
@@ -50,13 +48,14 @@ export function CategoryPage() {
     a => a.categoryId === currentCategoryId && !a.isHidden
   )
 
-  async function handleDone(rating: number, note: string, photo?: string, activity?: Activity) {
+  async function handleDone(rating: number, note: string, photo?: string, activity?: Activity, score?: number) {
     const target = activity ?? doneActivity
     if (!target) return
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       date: Date.now(),
       rating,
+      score,
       note: note || undefined,
       photo,
     }
@@ -72,12 +71,14 @@ export function CategoryPage() {
     intervalUnit: 'days' | 'weeks',
     categoryId: string | undefined,
     lastDoneDate: string,
-    ratingEnabled: boolean
+    ratingEnabled: boolean,
+    scoreEnabled: boolean,
+    scoreLabel: string
   ) {
     const history: HistoryEntry[] = lastDoneDate
       ? [{ id: crypto.randomUUID(), date: new Date(lastDoneDate).getTime(), rating: 0 }]
       : []
-    await createActivity({ name, interval, intervalUnit, categoryId, history, ratingEnabled, createdAt: Date.now() })
+    await createActivity({ name, interval, intervalUnit, categoryId, history, ratingEnabled, scoreEnabled, scoreLabel, createdAt: Date.now() })
     setShowAddActivity(false)
     refresh()
   }
@@ -136,8 +137,6 @@ export function CategoryPage() {
           </h1>
           {!currentCategoryId && (
             <div className="flex items-center gap-3">
-              <button className="text-lg text-gray-400" onClick={() => setShowSettings(true)}>⚙️</button>
-              <button className="text-sm text-gray-400" onClick={() => setShowChangePassword(true)}>🔑</button>
               <button
                 className="text-sm text-gray-400"
                 onClick={handleLogout}
@@ -149,7 +148,7 @@ export function CategoryPage() {
         </div>
       </div>
 
-      <div className="p-4 pb-28 flex flex-col gap-2">
+      <div className="p-4 pb-36 flex flex-col gap-2">
         {isEmpty ? (
           <div className="text-center py-20 text-gray-400">
             <div className="text-5xl mb-3">📋</div>
@@ -186,7 +185,7 @@ export function CategoryPage() {
                     activity={activity}
                     currentUserId={user.id}
                     onDone={() => {
-                      if (activity.ratingEnabled === false) {
+                      if (activity.ratingEnabled === false && !activity.scoreEnabled) {
                         confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } })
                         handleDone(0, '', undefined, activity)
                       } else {
@@ -211,8 +210,10 @@ export function CategoryPage() {
         <DonePopup
           activityName={doneActivity.name}
           ratingEnabled={doneActivity.ratingEnabled !== false}
+          scoreEnabled={doneActivity.scoreEnabled === true}
+          scoreLabel={doneActivity.scoreLabel ?? ''}
           onClose={() => setDoneActivity(null)}
-          onSave={handleDone}
+          onSave={(rating, note, photo, score) => handleDone(rating, note, photo, undefined, score)}
         />
       )}
 
@@ -236,10 +237,6 @@ export function CategoryPage() {
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
-      {showChangePassword && (
-        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
-      )}
-
       {editingCategory && (
         <EditCategoryModal
           category={editingCategory}
@@ -249,6 +246,25 @@ export function CategoryPage() {
           onSave={handleEditCategory}
           onDelete={handleDeleteCategory}
         />
+      )}
+
+      {!currentCategoryId && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 flex">
+          <button
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 text-gray-400 active:bg-gray-50"
+            onClick={() => navigate('/profile')}
+          >
+            <span className="text-2xl">🏆</span>
+            <span className="text-xs">Scorebord</span>
+          </button>
+          <button
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 text-gray-400 active:bg-gray-50"
+            onClick={() => setShowSettings(true)}
+          >
+            <span className="text-2xl">⚙️</span>
+            <span className="text-xs">Instellingen</span>
+          </button>
+        </div>
       )}
     </div>
   )
